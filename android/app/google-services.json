@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1046346519724",
+    "project_id": "meetup-dc486",
+    "storage_bucket": "meetup-dc486.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1046346519724:android:181645e77e6a713239fb09",
+        "android_client_info": {
+          "package_name": "com.example.meet_up"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1046346519724-enk2ao5kfp1f27k3ugak9qfe9chv02ok.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.meet_up",
+            "certificate_hash": "8a987afc572e59e978bc157e4e8949e5ee7bb785"
+          }
+        },
+        {
+          "client_id": "1046346519724-tko8n6b8jj0h15bbap3v45ofi7agrg2o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbMBhjMWifHftZW2axLm5r-kaTuRFrWgw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1046346519724-tko8n6b8jj0h15bbap3v45ofi7agrg2o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
