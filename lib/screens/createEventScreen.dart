@@ -1,437 +1,413 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:googleapis/calendar/v3.dart' as calendar hide Colors;
+import 'package:googleapis/calendar/v3.dart' as calendar;
 import 'package:intl/intl.dart';
-import 'package:meet_up/models/eventInfo.dart';
-import 'package:meet_up/models/groupModel.dart';
 import 'package:meet_up/utils/calendarEvents.dart';
-import 'package:meet_up/utils/firebaseHandler.dart';
-// import 'package:googleapis/calendar/' as calendar;
 
-class createEvent extends StatefulWidget {
-  // const createEvent({ Key? key }) : super(key: key);
+List<String> grpMembers = [];
 
+class CreateMeet extends StatefulWidget {
+  // const GroupScreen({ Key? key }) : super(key: key);
   @override
-  _createEventState createState() => _createEventState();
+  _CreateMeetState createState() => _CreateMeetState();
 }
 
-class _createEventState extends State<createEvent> {
+class _CreateMeetState extends State<CreateMeet> {
+  final _formKey = GlobalKey<FormState>();
+
   TextEditingController titleController = TextEditingController();
-  TextEditingController descriptionController = TextEditingController();
-  TextEditingController locationController = TextEditingController();
-  
-  bool  _generateMeet = false ; 
-  bool _notifyAttendees = false ; 
+  TextEditingController detailController = TextEditingController();
+  TextEditingController orgController = TextEditingController();
+
+  final List<calendar.EventAttendee> attendeesList = [];
+
+  bool _notify = false;
+  bool _generate = false;
+
+  @override
+  void initState() {
+    super.initState();
+    grpMembers.clear();
+  }
 
   DateTime date = DateTime.now();
+  DateTime selectedDate = DateTime.now();
 
   TimeOfDay startTime = TimeOfDay.now();
-
   TimeOfDay endTime = TimeOfDay.now();
 
-  Future<void> _selectDate(BuildContext context) async{
-    
-    final DateTime picked  = await showDatePicker(context: context, 
-           initialDate: date, 
-           firstDate: DateTime(2022,2), 
-           lastDate: DateTime(2023)
-           );
-    if(picked!=null && picked!=date){
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDate,
+        firstDate: DateTime(2015, 8),
+        lastDate: DateTime(2101));
+    if (picked != null && picked != selectedDate) {
       setState(() {
-              date = picked; 
-            });
-      // print(date);
-    }       
+        selectedDate = picked;
+      });
+    }
+
+    print(selectedDate);
   }
-
-  Future<TimeOfDay>_selectTime(BuildContext context) async{
-   
-   TimeOfDay picked  = await  showTimePicker(context: context, 
-   initialTime: startTime, 
-  
-   builder: (BuildContext context,Widget child){
-       return MediaQuery(
-           data: MediaQuery.of(context)
-           .copyWith(alwaysUse24HourFormat: true),
-           child: child,
-         ) ; 
-     }
-   );
-   return picked ;
-  }
-
-  TextEditingController attendeeController = TextEditingController();
-
-  List<calendar.EventAttendee> attendeesList = [];
-
- 
-  
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Create An Event',style: GoogleFonts.poppins()),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.all(10.0),
-              child: Text('Enter Details',style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold,
-                fontSize: 26.0
-              ))),
-             SizedBox(height: 10.0),
-             Expanded(
-               child: ListView(
-                 shrinkWrap: true,
-                 physics: BouncingScrollPhysics(),
-                  //  crossAxisAlignment: CrossAxisAlignment.start,
-                   children: [
-                     TextField(
-                       style: GoogleFonts.poppins(),
-                  controller: titleController,
-                  decoration: InputDecoration(
-                    hintText: 'Title',
-                    hintStyle: GoogleFonts.poppins(),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(18.0),
-                      borderSide: BorderSide(color: Colors.redAccent)
-                    )
-                    // enabledBorder: OutlineInputBorder(
-                    //   borderRadius: BorderRadius.circular(18.0),
-                    //   borderSide: BorderSide(color: Colors.redAccent)
-                    // )
-                  ),
-                ),
-            SizedBox(height: 10.0),
-            TextField(
-              style: GoogleFonts.poppins(),
-              controller: descriptionController,
-                decoration: InputDecoration(
-                  hintText: 'Description',
-                  hintStyle: GoogleFonts.poppins(),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(18.0),
-                      borderSide: BorderSide(color: Colors.redAccent)
-                    )
-                ),
+    final localizations = MaterialLocalizations.of(context);
+
+    return Container(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(18.0),
+            child: Container(
+              alignment: Alignment.center,
+              width: double.infinity,
+              child: Text('Enter Details',
+                  style:
+                      TextStyle(fontWeight: FontWeight.bold, fontSize: 24.0)),
             ),
-            SizedBox(height: 10.0),
-            TextField(
-              style: GoogleFonts.poppins(),
-              controller: locationController,
-                decoration: InputDecoration(
-                 hintStyle: GoogleFonts.poppins(),
-                  hintText: 'Location',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(18.0),
-                      borderSide: BorderSide(color: Colors.redAccent)
-                    )
-                  )
-                ),
-            Padding(
+          ),
+          SizedBox(height: 12.0),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Divider(
-                  endIndent: 10.0,
-                  indent: 10.0,
-                  color: Colors.redAccent,
-                  thickness: 2.0,
-                ),
-            ),
-            Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(DateFormat.yMMMd().format(date),style: GoogleFonts.poppins(
-                      fontSize: 18.0
-                    ),),
-                    GestureDetector(
-                      onTap: (){
-                        _selectDate(context);
-                      },
-                      child: Text('Change Date',style: GoogleFonts.poppins(
-                        color: Colors.redAccent
-                      )),
-                    )
-                  ],
-                ),
-            ),
-            Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Divider(
-                  endIndent: 10.0,
-                  indent: 10.0,
-                  color: Colors.redAccent,
-                  thickness: 2.0,
-                ),
-            ),
-            Padding(
-                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(MaterialLocalizations.of(context).formatTimeOfDay(startTime),style: GoogleFonts.poppins(
-                      fontSize: 18.0
-                    )),
-                        GestureDetector(
-                          onTap: () async{
-                            startTime = await _selectTime(context);        
-                            setState(() {});
-                          },
-                          child: Text('Change',style: GoogleFonts.poppins(
-                            color: Colors.redAccent
+                    TextField(
+                      controller: titleController,
+                      decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.blueAccent),
+                            borderRadius: BorderRadius.circular(10.0),
+                            // borderSide: BorderSide.none
+                          ),
+                          hintText: 'Enter Title'),
+                    ),
+                    SizedBox(height: 12.0),
+                    TextField(
+                      controller: detailController,
+                      decoration: InputDecoration(
+                        hintText: 'Enter Details',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                          borderSide: BorderSide(color: Colors.blueAccent),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12.0),
+                    TextField(
+                      controller: orgController,
+                      decoration: InputDecoration(
+                        hintText: 'Enter Organisation',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                          borderSide: BorderSide(
+                              color: Colors
+                                  .blueAccent), // borderSide: BorderSide.none
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12.0),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text('Add Groups',
+                          style: TextStyle(
+                            fontSize: 20.0,
                           )),
-                        )
-                      ],
                     ),
-                    Text('to',style: GoogleFonts.poppins()),
-                    Row(
-                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(MaterialLocalizations.of(context).formatTimeOfDay(endTime),style: GoogleFonts.poppins(
-                      fontSize: 18.0
-                    )),
-                        GestureDetector(
-                          onTap: () async{
-                            endTime = await _selectTime(context);        
-                            setState(() {});
-                          },
-                          child: Text('Change',style: GoogleFonts.poppins(
-                            color: Colors.redAccent
-                          )),
-                        )
-                      ],
-                    )
-                  ],
-                ),
-            ),
-            Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Divider(
-                  endIndent: 10.0,
-                  indent: 10.0,
-                  color: Colors.redAccent,
-                  thickness: 2.0,
-                ),
-            ),
-            Text('Add Attendees',style: GoogleFonts.poppins()),
-            Row(
-                children: [
-                  Expanded(child: TextField(
-                    style: GoogleFonts.poppins(),
-                    controller: attendeeController,
-                    decoration: InputDecoration(
-                      hintText: 'Email :',
-                      hintStyle: GoogleFonts.poppins()
-                    ),
-                  )),
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.redAccent
-                    ),
-                    child: Center(child: IconButton(icon: Icon(Icons.add,size: 24.0,color: Colors.white,), onPressed: (){
-                              setState(() {
-                                  calendar.EventAttendee newAttendee = new calendar.EventAttendee();
-                                  newAttendee.email = attendeeController.text; 
-                                  attendeesList.add(newAttendee);
-                                  attendeeController.clear();
-                              });
-                    })))
-                ],
-            ),
-            SizedBox(height: 20.0),
-            Text('Or Select One of Your groups :',style: GoogleFonts.poppins()),
-            StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('groups').snapshots(),
-              builder: (context,snapshot){
-                if(snapshot.data.docs.length>0){
-                  return ListView.builder(
-                    shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                    itemCount: snapshot.data.docs.length,
-                    itemBuilder: (context,index){
-                      
-                      Map<String,dynamic> jsonData = snapshot.data.docs[index].data();
-                      GroupModel myGroup = GroupModel.fromJSON(jsonData);
+                    Container(
+                      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser.uid)
+                            .collection('groups')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Center(child: CircularProgressIndicator());
+                          } else if (snapshot.data.size > 0) {
+                            return ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: snapshot.data.docs.length,
+                                itemBuilder: (context, index) {
+                                  return Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Text(
+                                        snapshot.data.docs[index]
+                                            .data()['group_name'],
+                                        style: TextStyle(
+                                            color: Colors.blueAccent,
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      Container(
+                                        child: IconButton(
+                                            icon: Icon(Icons.add,
+                                                color: Colors.blueAccent),
+                                            onPressed: () async {
+                                              QuerySnapshot<
+                                                      Map<String, dynamic>>
+                                                  queryData =
+                                                  await FirebaseFirestore
+                                                      .instance
+                                                      .collection('users')
+                                                      .doc(FirebaseAuth.instance
+                                                          .currentUser.uid)
+                                                      .collection('groups')
+                                                      .doc(snapshot
+                                                          .data.docs[index].id)
+                                                      .collection('members')
+                                                      .get();
 
-                      return Row(
+                                              queryData.docs.forEach((element) {
+                                                calendar.EventAttendee
+                                                    newAttendee =
+                                                    calendar.EventAttendee();
+                                                newAttendee.email =
+                                                    element.data()['name'];
+
+                                                attendeesList.add(newAttendee);
+                                                // grpMembers.add(element.data()['name']);
+                                              });
+                                              setState(() {});
+                                            }),
+                                      )
+                                    ],
+                                  );
+                                });
+                          }
+                          return Text("No Groups added");
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child:
+                          Text("Members :", style: TextStyle(fontSize: 20.0)),
+                    ),
+                    Container(
+                      height: 90.0,
+                      child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: attendeesList.length,
+                          // itemCount: grpMembers.length,
+                          itemBuilder: (context, index) {
+                            if (attendeesList.length > 0) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(attendeesList[index].email),
+                              );
+                            }
+                            return Text("No Groups added");
+                          }),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                    Text(myGroup.title,style: GoogleFonts.poppins()),
-                    Container(
-                      width: 40.0,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.redAccent
+                          Text(
+                            DateFormat.yMMMd().format(selectedDate),
+                            style: TextStyle(fontSize: 18.0),
+                          ),
+                          GestureDetector(
+                              onTap: () {
+                                _selectDate(context);
+                                // setState(() {
+
+                                //                   });
+                              },
+                              child: Text("Change",
+                                  style: TextStyle(
+                                      color: Colors.blueAccent,
+                                      fontSize: 16.0)))
+                        ],
+                      ),
                     ),
-                    child: Center(child: IconButton(icon: Icon(Icons.add,size: 24.0,color: Colors.white,), onPressed: (){
-                       setState(() {
-                               myGroup.emailList.forEach((element) {
-                                 calendar.EventAttendee newAttendee = new calendar.EventAttendee();
-                                 newAttendee.email = element ; 
+                    SizedBox(height: 12.0),
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Text(
+                              localizations
+                                  .formatTimeOfDay(startTime)
+                                  .toString(),
+                              style: TextStyle(fontSize: 18.0)),
+                          GestureDetector(
+                              onTap: () async {
+                                final TimeOfDay picked_s = await showTimePicker(
+                                    context: context,
+                                    initialTime: startTime,
+                                    builder:
+                                        (BuildContext context, Widget child) {
+                                      return MediaQuery(
+                                        data: MediaQuery.of(context).copyWith(
+                                            alwaysUse24HourFormat: false),
+                                        child: child,
+                                      );
+                                    });
 
-                                 attendeesList.add(newAttendee);
-                               })              ;
-                            });
-                    })))
-                  ],
-                      );
-                  });
-                }
-                return Text('No Groups added yet');
-              },
-            ),
-            Row(),
-            Row(),
-            SizedBox(height: 30.0),
-            Text('Attendees: ',style: GoogleFonts.poppins()),
-            ListView.builder(
-              // padding: EdgeInsets.all(12.0),
-              physics: NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: attendeesList.length,
-              itemBuilder: (context,index){
-                 return ListTile(
-                   title: Text(attendeesList[index].email,style: GoogleFonts.poppins()),
-                 );
-            }),
-            SizedBox(height: 25.0),
-            Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Divider(
-                  endIndent: 10.0,
-                  indent: 10.0,
-                  color: Colors.redAccent,
-                  thickness: 2.0,
-                ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Generate Google Meet : ',style: GoogleFonts.poppins()),
-                  Switch(
-                    value: _generateMeet, 
-                    onChanged: (val){
-                      setState(() {
-                            _generateMeet = val ;                   
-                        });
-                    },
-                    activeColor: Colors.redAccent,
-                    )
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Notify Attendees : ',style: GoogleFonts.poppins()),
-                  Switch(
-                    value: _notifyAttendees, 
-                    onChanged: (val){
-                      setState(() {
-                            _notifyAttendees = val ;                   
-                        });
-                    },
-                    activeColor: Colors.redAccent,
-                    )
-                ],
-              ),
-            ),
-            SizedBox(height: 15.0),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10.0
-              ),
-              child: GestureDetector(
-                onTap: () async{
-                    DateTime startDateTime = DateTime(
-                      date.year,
-                      date.month,
-                      date.day,
-                      startTime.hour,
-                      startTime.minute
-                    );
+                                if (picked_s != null && picked_s != startTime)
+                                  setState(() {
+                                    startTime = picked_s;
+                                  });
+                              },
+                              child: Text(
+                                "Change",
+                                style: TextStyle(
+                                    color: Colors.blueAccent, fontSize: 16.0),
+                              ))
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Text(
+                              localizations.formatTimeOfDay(endTime).toString(),
+                              style: TextStyle(fontSize: 18.0)),
+                          GestureDetector(
+                              onTap: () async {
+                                final TimeOfDay picked_s = await showTimePicker(
+                                    context: context,
+                                    initialTime: startTime,
+                                    builder:
+                                        (BuildContext context, Widget child) {
+                                      return MediaQuery(
+                                        data: MediaQuery.of(context).copyWith(
+                                            alwaysUse24HourFormat: false),
+                                        child: child,
+                                      );
+                                    });
 
-                    DateTime endDateTime = DateTime(
-                      date.year,
-                      date.month,
-                      date.day,
-                      endTime.hour,
-                      endTime.minute
-                    );
+                                if (picked_s != null && picked_s != startTime)
+                                  setState(() {
+                                    endTime = picked_s;
+                                  });
+                              },
+                              child: Text("Change",
+                                  style: TextStyle(
+                                      color: Colors.blueAccent,
+                                      fontSize: 16.0)))
+                        ],
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Text("Generate Google Meet : "),
+                        Switch(
+                            value: _generate,
+                            onChanged: (val) {
+                              setState(() {
+                                _generate = val;
+                              });
+                            })
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Text("Notify Attendees:  "),
+                        Switch(
+                            value: _notify,
+                            onChanged: (val) {
+                              print(val);
 
-                    await CalendarClient().insert(
-                      title: titleController.text, 
-                      description: descriptionController.text, 
-                      location: locationController.text, 
-                      attendeeEmailList: attendeesList, 
-                      shouldNotifyAttendees: _notifyAttendees, 
-                      hasConferenceSupport: true, 
-                      startTime: startDateTime, 
-                      endTime: endDateTime
-                      )
-                      .then((Map<String, String> eventData) async{
-                         
-                         String meetLink = ""; 
-                         String eventId = eventData["id"];
+                              setState(() {
+                                _notify = val;
+                              });
+                            })
+                      ],
+                    ),
+                    SizedBox(height: 12.0),
+                    GestureDetector(
+                      onTap: () async {
+                        DateTime startDateTime = DateTime(date.year, date.month,
+                            date.day, startTime.hour, startTime.minute);
 
-                        // if(isConference)
+                        DateTime endDateTime = DateTime(date.year, date.month,
+                            date.day, endTime.hour, endTime.minute);
+
+                        // CalendarFunctions().insertEvent();
+
+                        await CalendarFunctions()
+                            .insert(
+                                title: titleController.text,
+                                description: detailController.text,
+                                location: orgController.text,
+                                attendeeEmailList: attendeesList,
+                                shouldNotifyAttendees: _notify,
+                                hasConferenceSupport: _generate,
+                                startTime: startDateTime,
+                                endTime: endDateTime)
+                            .then((eventData) {
+                          String meetLink = "";
+                          String eventId = eventData["id"];
+
+                          // if(_notify)
                           meetLink = eventData["link"];
 
-                           List<String> emailsList = [];
-                           
-                           for(int i=0 ; i<attendeesList.length ; i++){
-                                    emailsList.add(attendeesList[i].email);
-                            }
+                          List<String> emailsList = [];
 
-                          int startTimeSinceEpoch = startDateTime.millisecondsSinceEpoch;
-                           int endTimeSinceEpoch = endDateTime.millisecondsSinceEpoch;
+                          for (int i = 0; i < attendeesList.length; i++) {
+                            emailsList.add(attendeesList[i].email);
+                          }
 
-                          EventModel newEventModel = EventModel(
-                            id: eventId,
-                            description: descriptionController.text,
-                            emails: emailsList,
-                            endTimeSinceEpoch: endTimeSinceEpoch,
-                            link: meetLink,
-                            location: locationController.text,
-                            startTimeSinceepoch: startTimeSinceEpoch,
-                            title: titleController.text
-                          );
+                          int startTimeSinceEpoch =
+                              startDateTime.millisecondsSinceEpoch;
+                          int endTimeSinceEpoch =
+                              endDateTime.millisecondsSinceEpoch;
 
-                          await FirebaseAdd().addEvent(newEventModel);
-                          
-                          Navigator.pop(context);
-                      });
-                },
-                child: Container(
-                  alignment: Alignment.center,
-                  padding: EdgeInsets.all(14.0),
-                  color: Colors.redAccent,
-                  child: Text('CREATE',style: GoogleFonts.poppins(
-                    color: Colors.white
-                  )),
+                          FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(FirebaseAuth.instance.currentUser.uid)
+                              .collection('meetings')
+                              .add({
+                            'id': eventId,
+                            'description': detailController.text,
+                            'emails': emailsList,
+                            'endTimeSinceEpoch': endTimeSinceEpoch,
+                            'link': meetLink,
+                            'location': orgController.text,
+                            'startTimeSinceepoch': startTimeSinceEpoch,
+                            'title': titleController.text
+                          });
+                        });
+                      },
+                      child: Container(
+                          margin: EdgeInsets.symmetric(horizontal: 12.0),
+                          decoration: BoxDecoration(color: Colors.blueAccent),
+                          padding: EdgeInsets.all(12.0),
+                          width: double.infinity,
+                          alignment: Alignment.center,
+                          child: Text(
+                            "CREATE",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                    ),
+                  ],
                 ),
               ),
-            )
-           ],                   
-          ),
-             ),
-          ],
-        ),
+            ),
+          )
+        ],
       ),
     );
   }
