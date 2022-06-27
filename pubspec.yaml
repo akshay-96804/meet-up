@@ -36,7 +36,9 @@ dependencies:
   googleapis_auth:
   url_launcher:
   flutter_svg:  
-  auto_size_text:          
+  auto_size_text: 
+  firebase_auth:  
+  page_transition:       
 
 dev_dependencies:
   flutter_test:
