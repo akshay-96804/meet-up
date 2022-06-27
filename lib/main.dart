@@ -1,15 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-// import 'package:google_fonts/google_fonts.dart';
-// import 'package:googleapis/cloudbuild/v1.dart';
-// import 'package:googleapis_auth/auth.dart';
-import 'package:googleapis_auth/auth_io.dart';
-// import 'package:meet_up/screens/createEventScreen.dart';
-import 'package:meet_up/screens/landingpage.dart';
-import 'package:googleapis/calendar/v3.dart' as cal;
-import 'package:meet_up/secrets.dart';
-import 'package:meet_up/utils/calendarEvents.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:meet_up/screens/landingPage.dart';
+import 'package:meet_up/screens/loginpage.dart';
+
 
 
 Future<void> main() async{ 
@@ -31,9 +26,34 @@ class MyApp extends StatelessWidget {
       home: LandingPage(),
       theme: ThemeData(
         
-        // primarySwatch: ,
-        primaryColor: Colors.redAccent
+        textTheme: TextTheme(
+          title: GoogleFonts.lato(),
+          body1: GoogleFonts.lato()
+        ),
+        primaryColor: Colors.blueAccent
       ),
     );
+  }
+}
+
+class AuthState extends StatefulWidget {
+  // const AuthState({ Key? key }) : super(key: key);
+
+  @override
+  State<AuthState> createState() => _AuthStateState();
+}
+
+class _AuthStateState extends State<AuthState> {
+  User currUser = null ; 
+
+  @override
+  void initState() {
+    super.initState();
+    currUser = FirebaseAuth.instance.currentUser ;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return currUser==null ? LoginPage():LandingPage();
   }
 }
