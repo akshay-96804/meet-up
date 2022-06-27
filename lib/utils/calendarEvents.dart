@@ -7,7 +7,7 @@ import 'package:meet_up/secrets.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 
-class CalendarClient{
+class CalendarFunctions{
 
 static var calendar;
 
@@ -65,24 +65,29 @@ Future<Map<String, String>> insert({
   const _scopes = const [cal.CalendarApi.calendarScope];
 
    await clientViaUserConsent(_clientID, _scopes, prompt).then((AuthClient client) async {
-    CalendarClient.calendar = cal.CalendarApi(client);
+    CalendarFunctions.calendar = cal.CalendarApi(client);
   });
    await calendar.events
        .insert(event, calendarId,
            conferenceDataVersion: hasConferenceSupport ? 1 : 0, sendUpdates: shouldNotifyAttendees ? "all" : "none")
        .then((value) {
      print("Event Status: ${value.status}");
+
      if (value.status == "confirmed") {
        String joiningLink;
        String eventId;
 
         eventId = value.id;
+        print(eventId);
 
         if (hasConferenceSupport) {
           joiningLink = "https://meet.google.com/${value.conferenceData.conferenceId}";
         }
 
-        eventData = {'id': eventId, 'link': joiningLink};
+        eventData = {
+          'id': eventId, 
+          'link': joiningLink
+        };
 
         print('Event added to Google Calendar');
       } else {
